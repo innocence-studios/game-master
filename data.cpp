@@ -1,4 +1,4 @@
-
+/*
 #include "data.h"
 #include <algorithm>
 #include <cctype>
@@ -22,7 +22,7 @@ static int getRand(int min, int max) {
     return dis(gen);
 };
 
-static void display(string str, bool hasEndl = true) {
+static void display(string str, bool hasEndl) {
     for (char c : str) {
         cout << c;
 
@@ -67,11 +67,11 @@ static int choice(vector<string> choices) {
     while (!(GetKeyState(VK_RETURN) & 0x8000)) {
         cout << "\r> Option " << i + 1 << "  (" << choices[i] << ")";
         if (GetKeyState(VK_UP) & 0x8000) {
-            if (!keyPressed) i = clamp(i + 1, 0, choices.size() - 1);
+            if (!keyPressed) i = clamp(i + 1, 0, static_cast<int>(choices.size() - 1));
             keyPressed = true;
         }
         else if (GetKeyState(VK_DOWN) & 0x8000) {
-            if (!keyPressed) i = clamp(i - 1, 0, choices.size() - 1);
+            if (!keyPressed) i = clamp(i - 1, 0, static_cast<int>(choices.size() - 1));
             keyPressed = true;
         }
         else {
@@ -97,7 +97,7 @@ static int vectorTotal(vector<int> vec) {
     return total;
 };
 
-static string toLowercase(const string& str) {
+static string toLowercase(string str) {
     string result;
     for (char c : str) { result += tolower(c); };
     return result;
@@ -107,7 +107,7 @@ static string firstUpper(string str) {
     return !str.empty() ? (str[0] = toupper(str[0]), str) : str;
 };
 
-static int rollDice(int max = 6) {
+static int rollDice(int max) {
     int out = -1;
     for (int i = 0; i < getRand(10, 15); i++) {
         out = getRand(1, max);
@@ -118,7 +118,7 @@ static int rollDice(int max = 6) {
     return out;
 };
 
-static int rollDiceAndCalculateTotal(const string& attribute, int maxDice = 6) {
+static int rollDiceAndCalculateTotal(string attribute, int maxDice) {
     display(attribute + ":");
 
     vector<int> dice;
@@ -133,125 +133,143 @@ static int rollDiceAndCalculateTotal(const string& attribute, int maxDice = 6) {
 
 class ArmorStats {
 public:
-    double Defense;
-    double Weight;
-    double Agility;
+    double defense;
+    double weight;
+    double agility;
 
-    ArmorStats(double _Defense, double _Weight, double _Agility) :
-        Defense(_Defense),
-        Weight(_Weight),
-        Agility(_Agility)
+    ArmorStats(double _defense, double _weight, double _agility) :
+        defense(_defense),
+        weight(_weight),
+        agility(_agility)
     {}
 };
 
 class Armor {
 public:
-    string Name;
-    ArmorStats Stats;
+    string name;
+    ArmorStats stats;
 
-    Armor(string _Name, ArmorStats _Stats = ArmorStats(0, 0, 0)) :
-        Name(_Name),
-        Stats(_Stats)
+    Armor(string _name, ArmorStats _stats) :
+        name(_name),
+        stats(_stats)
     {}
 };
 
 class ShieldStats {
 public:
-    double Defense;
-    double Weight;
+    double defense;
+    double weight;
 
-    ShieldStats(double _Defense, double _Weight) :
-        Defense(_Defense),
-        Weight(_Weight)
+    ShieldStats(double _defense, double _weight) :
+        defense(_defense),
+        weight(_weight)
     {}
 };
 
 class Shield {
 public:
-    string Name;
-    ShieldStats Stats;
+    string name;
+    ShieldStats stats;
 
-    Shield(string _Name, ShieldStats _Stats = ShieldStats(0, 0)) :
-        Name(_Name),
-        Stats(_Stats)
+    Shield(string _name, ShieldStats _stats) :
+        name(_name),
+        stats(_stats)
     {}
 };
 
 class ArmorClass {
 public:
-    Armor Armor;
-    Shield Shield;
+    Armor armor;
+    Shield shield;
+
+    ArmorClass(Armor _armor, Shield _shield) :
+        armor(_armor),
+        shield(_shield)
+    {}
 };
 
 class WeaponStats {
 public:
-    double Damage;
-    double Speed;
-    double Weight;
+    double damage;
+    double speed;
+    double weight;
 
-    WeaponStats(double _Damage, double _Speed, double _Weight) :
-        Damage(_Damage),
-        Speed(_Speed),
-        Weight(_Weight)
+    WeaponStats(double _damage, double _speed, double _weight) :
+        damage(_damage),
+        speed(_speed),
+        weight(_weight)
     {}
 };
 
 class Weapon {
 public:
-    string Name;
-    string Type;
-    WeaponStats Stats;
+    string name;
+    string type;
+    WeaponStats stats;
 
-    Weapon(string _Name, string _Type, WeaponStats _Stats = WeaponStats(0, 0, 0)) :
-        Name(_Name),
-        Type(_Type),
-        Stats(_Stats)
+    Weapon(string _name, string _type, WeaponStats _stats) :
+        name(_name),
+        type(_type),
+        stats(_stats)
+    {}
+};
+
+class Item {
+public:
+    string name;
+    double value;
+    double weight;
+
+    Item(string _name, double _value, double _weight) : 
+        name(_name),
+        value(_value),
+        weight(_weight)
     {}
 };
 
 class Equipment {
 public:
-    ArmorClass Armor;
-    vector<Weapon> Weapons;
+    ArmorClass armor;
+    vector<Weapon> weapons;
+    vector<Item> inventory;
 
-    Equipment(ArmorClass _Armor, vector<Weapon> _Weapons) :
-        Armor(_Armor),
-        Weapons(_Weapons)
+    Equipment(ArmorClass _armor, vector<Weapon> _weapons, vector<Item> _inventory) :
+        armor(_armor),
+        weapons(_weapons),
+        inventory(_inventory)
     {}
 };
 
 class Player {
 public:
-    string Name;
+    string name;
 
-    string Class;
+    string class_;
 
-    string Species;
+    string species;
 
-    int Strength;
-    int Dexterity;
-    int Constitution;
-    int Intelligence;
-    int Wisdom;
-    int Charisma;
+    int strength;
+    int dexterity;
+    int constitution;
+    int intelligence;
+    int wisdom;
+    int charisma;
 
-    int StrengthModifier;
-    int DexterityModifier;
-    int ConstitutionModifier;
-    int IntelligenceModifier;
-    int WisdomModifier;
-    int CharismaModifier;
+    int strengthModifier;
+    int dexterityModifier;
+    int constitutionModifier;
+    int intelligenceModifier;
+    int wisdomModifier;
+    int charismaModifier;
 
-    string Background;
+    string background;
 
-    Equipment Equipment;
+    Equipment equipment;
 
-    Player(const string& _name, const string& _class, const string& _species,
-        int _str, int _dex, int _con, int _intl, int _wis, int _cha,
-        const string& _background)
-        : Name(_name), Class(_class), Species(_species),
-        Strength(_str), Dexterity(_dex), Constitution(_con), Intelligence(_intl), Wisdom(_wis), Charisma(_cha),
-        Background(_background)
+    Player(string _name, string _class, string _species, int _str, int _dex, int _con, int _intl, int _wis, int _cha, string _background, Equipment _Equipment) :
+        name(_name), class_(_class), species(_species),
+        strength(_str), dexterity(_dex), constitution(_con), intelligence(_intl), wisdom(_wis), charisma(_cha),
+        background(_background), equipment(_Equipment)
     {}
 };
 
@@ -387,3 +405,4 @@ vector<vector<string>> bigNumbers = {
 		"          "
 	}
 };
+*/

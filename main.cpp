@@ -1,5 +1,5 @@
 
-#include "data.h"
+// #include "data.h"
 #include <algorithm>
 #include <cctype>
 #include <chrono>
@@ -15,9 +15,660 @@ using namespace std;
 using namespace chrono;
 using namespace this_thread;
 
-int main() {
-    display("Hey. I am your Game Master. Let's define your character:\n");
+static int getRand(int min, int max) {
+    random_device rd;
+    mt19937 gen(rd());
+    uniform_int_distribution<int> dis(min, max);
+
+    return dis(gen);
+};
+
+static string repeatString(string str, int amount) {
+    string result;
+    for (int i = 0; i < amount; ++i) {
+        result += str;
+    }
+    return result;
+};
+
+static void display(string str, bool hasEndl = true) {
+    for (char c : str) {
+        cout << c;
+        
+        switch (c) {
+        case '.':
+        case '?':
+        case '!':
+        case ':':
+            sleep_for(milliseconds(getRand(250, 750)));
+            break;
+        case '\n':
+            break;
+        default:
+            sleep_for(milliseconds(getRand(25, 75)));
+            break;
+        };
+        
+    };
+    if (hasEndl) { cout << endl; };
+};
+
+static int indexOf(vector<string> vec, string val) {
+    auto it = find(vec.begin(), vec.end(), val);
+    if (it != vec.end()) {
+        return distance(vec.begin(), it);
+    }
+    else {
+        return -1;
+    };
+};
+
+static string input(string str) {
+    display(str + "\n> ", false);
+    string output;
+    getline(cin, output);
+    return output;
+};
+
+static int clamp(int value, int min, int max) {
+    return (value < min) ? min : (value > max) ? max : value;
+}
+
+static int longestString(vector<string> vec) {
+    int maxLength = 0;
+    for (const std::string& str : vec) {
+        int length = str.length();
+        if (length > maxLength) {
+            maxLength = length;
+        }
+    }
+    return maxLength;
+};
+
+static int choice(vector<string> choices) {
+    for (int i = 0; i < choices.size(); i++) {
+        display("> " + choices[i]);
+    };
     
+    display("");
+
+    int i = 0;
+    bool keyPressed = false;
+
+    cout << "\r> Option " << i + 1 << "  (" << choices[i] << ")                    \r";
+
+    while (!(GetKeyState(VK_RETURN) & 0x8000)) {
+        string spaces = repeatString(" ", (longestString(choices) - choices[i].size()));
+        if (GetKeyState(VK_UP) & 0x8000) {
+            if (!keyPressed) {
+                i = clamp(i - 1, 0, static_cast<int>(choices.size() - 1));
+                cout << "\r> Option " << i + 1 << "  (" << choices[i] << ")                    \r";
+            };
+            keyPressed = true;
+        }
+        else if (GetKeyState(VK_DOWN) & 0x8000) {
+            if (!keyPressed) {
+                i = clamp(i + 1, 0, static_cast<int>(choices.size() - 1));
+                cout << "\r> Option " << i + 1 << "  (" << choices[i] << ")                    \r";
+            }
+            keyPressed = true;
+        }
+        else {
+            keyPressed = false;
+        };
+    };
+
+    display("\n");
+
+    return i;
+};
+
+static bool vectorHasValue(vector<string> vec, string val) {
+    return find(vec.begin(), vec.end(), val) != vec.end();
+};
+
+static vector<int> highestOfVector(vector<int> vec, int amount) {
+    sort(vec.begin(), vec.end(), greater<int>());
+    return vector<int>(vec.begin(), vec.begin() + amount);
+}
+
+static int vectorTotal(vector<int> vec) {
+    int total = 0;
+    for (int value : vec) { total += value; };
+    return total;
+};
+
+static string toLowercase(string str) {
+    string result;
+    for (char c : str) { result += tolower(c); };
+    return result;
+}
+
+static string firstUpper(string str) {
+    return !str.empty() ? (str[0] = toupper(str[0]), str) : str;
+};
+
+static int rollDice(int max) {
+    int out = -1;
+    for (int i = 0; i < getRand(10, 15); i++) {
+        out = getRand(1, max);
+        cout << "\r" << to_string(out) + " ";
+        sleep_for(milliseconds(50));
+    };
+    display("!");
+    return out;
+};
+
+static int rollDiceAndCalculateTotal(string attribute, int maxDice = 6) {
+    display(attribute + ":");
+
+    vector<int> dice;
+    for (int i = 0; i < 4; ++i) { dice.push_back(rollDice(maxDice)); };
+
+    int total = vectorTotal(highestOfVector(dice, 3));
+
+    display("Total: " + to_string(total) + "\n");
+
+    return total;
+}
+
+struct Dice {
+    int amount;
+    int max;
+};
+
+enum Bonus {
+    Advantage,
+    Disadvantage,
+    Neutral
+};
+
+enum WeaponProperty {
+    Range,
+    Ammunition,
+    Loading,
+    Reload,
+    TwoHanded,
+    Versatile,
+    Light,
+    Heavy,
+    Finesse,
+    Thrown,
+    Special,
+    Reach,
+    BurstFire,
+};
+enum WeaponAttribute {
+    Necrotic,
+    Slashing,
+    Piercing,
+    Bludgeoning,
+    Radiant,
+};
+enum WeaponType {
+    Martial,
+    Simple,
+    Firearm,
+};
+enum WeaponStyle {
+    Melee,
+    Ranged,
+};
+
+class Weapon {
+public:
+    string name;                       // Weapon name
+    double value;                      // Cost in gp
+    Dice damage;                       // Dice type
+    WeaponAttribute attributes;        // Weapon attribute
+    WeaponType type;                   // Martial, Firearm...
+    WeaponStyle style;                 // Melee, Ranged...
+    double weight;                     // Weight in *kg*
+    vector<WeaponProperty> properties; // Weapon properties
+
+    Weapon(string _name, double _value, Dice _damage, WeaponType _type, WeaponAttribute _attributes, WeaponStyle _style, double _weight, vector<WeaponProperty> _properties) :
+        name(_name),
+        value(_value),
+        damage(_damage),
+        type(_type),
+        attributes(_attributes),
+        style(_style),
+        weight(_weight),
+        properties(_properties)
+    {}
+};
+
+vector<Weapon> Weapons = {
+    //     Name                      Dice Damage   Type                 Attribute                     Style                     Properties
+    Weapon("Antimatter Rifle",       -1,  {6, 8},  WeaponType::Firearm, WeaponAttribute::Necrotic,    WeaponStyle::Ranged, 4.5, vector<WeaponProperty>({ // Properties
+            WeaponProperty::Range,
+            WeaponProperty::Ammunition,
+            WeaponProperty::Reload,
+            WeaponProperty::TwoHanded
+        })),
+    Weapon("Battleaxe",              10,  {1, 8},  WeaponType::Martial, WeaponAttribute::Slashing,    WeaponStyle::Melee,  1.8, vector<WeaponProperty>({
+            WeaponProperty::Versatile
+        })),
+    Weapon("Blowgun",                10,  {1, 1},  WeaponType::Martial, WeaponAttribute::Piercing,    WeaponStyle::Ranged, .4,  vector<WeaponProperty>({
+            WeaponProperty::Ammunition,
+            WeaponProperty::Loading,
+            WeaponProperty::Range
+        })),
+    Weapon( "Boomerang",             -1,  {1, 4},  WeaponType::Simple,  WeaponAttribute::Bludgeoning, WeaponStyle::Ranged, .4,  vector<WeaponProperty>({
+            WeaponProperty::Range
+        })),
+    Weapon("Club",                   .1,  {1, 4},  WeaponType::Simple,  WeaponAttribute::Bludgeoning, WeaponStyle::Melee,  .9,  vector<WeaponProperty>({
+            WeaponProperty::Light
+        })),
+    Weapon("Crossbow (hand)",        75,  {1, 6},  WeaponType::Martial, WeaponAttribute::Piercing,    WeaponStyle::Ranged, 1.4, vector<WeaponProperty>({
+            WeaponProperty::Ammunition,
+            WeaponProperty::Range,
+            WeaponProperty::Light,
+            WeaponProperty::Loading
+        })),
+    Weapon("Crossbow (heavy)",       50,  {1, 10}, WeaponType::Martial, WeaponAttribute::Piercing,    WeaponStyle::Ranged, 8.2, vector<WeaponProperty>({
+            WeaponProperty::Ammunition,
+            WeaponProperty::Heavy,
+            WeaponProperty::Loading,
+            WeaponProperty::Range,
+            WeaponProperty::TwoHanded,
+        })),
+    Weapon("Crossbow (light)",       25,  {1, 8},  WeaponType::Simple,  WeaponAttribute::Piercing,    WeaponStyle::Ranged, 2.3, vector<WeaponProperty>({
+            WeaponProperty::Ammunition,
+            WeaponProperty::Loading,
+            WeaponProperty::Range,
+            WeaponProperty::TwoHanded,
+        })),
+    Weapon("Dagger",                 2,   {1, 4},  WeaponType::Simple,  WeaponAttribute::Piercing,    WeaponStyle::Melee,  .4,  vector<WeaponProperty>({
+            WeaponProperty::Finesse,
+            WeaponProperty::Light,
+            WeaponProperty::Thrown,
+            WeaponProperty::Range,
+        })),
+    Weapon("Dart",                   .05, {1, 4},  WeaponType::Simple,  WeaponAttribute::Piercing,    WeaponStyle::Ranged, .1,  vector<WeaponProperty>({
+            WeaponProperty::Finesse,
+            WeaponProperty::Thrown,
+            WeaponProperty::Range,
+        })),
+    Weapon("Double-Bladed Scimitar", 100, {2, 4},  WeaponType::Martial, WeaponAttribute::Slashing,    WeaponStyle::Melee,  2.7, vector<WeaponProperty>({
+            WeaponProperty::Special,
+            WeaponProperty::TwoHanded,
+        })),
+    Weapon("Flail",                  10,  {1, 8},  WeaponType::Martial, WeaponAttribute::Bludgeoning, WeaponStyle::Melee,  .9,  vector<WeaponProperty>( {     } )),
+    Weapon("Glaive",                 20,  {1, 10}, WeaponType::Martial, WeaponAttribute::Slashing,    WeaponStyle::Melee,  2.7, vector<WeaponProperty>({
+            WeaponProperty::Heavy,
+            WeaponProperty::Reach,
+            WeaponProperty::TwoHanded,
+        })),
+    Weapon("Greataxe",               30,  {1, 12}, WeaponType::Martial, WeaponAttribute::Slashing,    WeaponStyle::Melee,  3.2, vector<WeaponProperty>({
+            WeaponProperty::Heavy,
+            WeaponProperty::TwoHanded,
+        })),
+    Weapon("Greatclub",              .2,  {1, 8},  WeaponType::Simple,  WeaponAttribute::Bludgeoning, WeaponStyle::Melee,  4.5, vector<WeaponProperty>({
+            WeaponProperty::TwoHanded,
+        })),
+    Weapon("Greatsword",             50,  {2, 6},  WeaponType::Martial, WeaponAttribute::Slashing,    WeaponStyle::Melee,  2.7, vector<WeaponProperty>({
+            WeaponProperty::Heavy,
+            WeaponProperty::TwoHanded,
+        })),
+    Weapon("Halberd",                20,  {1, 10}, WeaponType::Martial, WeaponAttribute::Slashing,    WeaponStyle::Melee,  2.7, vector<WeaponProperty>({
+            WeaponProperty::Heavy,
+            WeaponProperty::Reach,
+            WeaponProperty::TwoHanded,
+        })),
+    Weapon("Handaxe",                5,   {1, 6},  WeaponType::Simple,  WeaponAttribute::Slashing,    WeaponStyle::Melee,  .9,  vector<WeaponProperty>({
+            WeaponProperty::Light,
+            WeaponProperty::Thrown,
+            WeaponProperty::Range,
+        })),
+    Weapon("Javelin",                .5,  {1, 6},  WeaponType::Simple,  WeaponAttribute::Piercing,    WeaponStyle::Melee,  .9,  vector<WeaponProperty>({
+            WeaponProperty::Thrown,
+            WeaponProperty::Range,
+        })),
+    Weapon("Lance",                  10,  {1, 12}, WeaponType::Martial, WeaponAttribute::Piercing,    WeaponStyle::Melee,  2.7, vector<WeaponProperty>({
+            WeaponProperty::Reach,
+            WeaponProperty::Special,
+        })),
+    Weapon("Laser Pistol",           -1,  {3, 6},  WeaponType::Firearm, WeaponAttribute::Radiant,     WeaponStyle::Ranged, .9,  vector<WeaponProperty>({
+            WeaponProperty::Ammunition,
+            WeaponProperty::Range,
+            WeaponProperty::Reload,
+        })),
+    Weapon("Laser Rifle",            -1,  {3, 8},  WeaponType::Firearm, WeaponAttribute::Radiant,     WeaponStyle::Ranged, 3.2, vector<WeaponProperty>({
+            WeaponProperty::Ammunition,
+            WeaponProperty::Range,
+            WeaponProperty::Reload,
+            WeaponProperty::TwoHanded,
+        })),
+    Weapon("Light Hammer",           2,   {1, 4},  WeaponType::Simple,  WeaponAttribute::Bludgeoning, WeaponStyle::Melee,  .9,  vector<WeaponProperty>({
+            WeaponProperty::Light,
+            WeaponProperty::Thrown,
+            WeaponProperty::Range,
+        })),
+    Weapon("Longbow",                50,  {1, 8},  WeaponType::Martial, WeaponAttribute::Piercing,    WeaponStyle::Ranged, .9,  vector<WeaponProperty>({
+            WeaponProperty::Ammunition,
+            WeaponProperty::Heavy,
+            WeaponProperty::Range,
+            WeaponProperty::TwoHanded,
+        })),
+    Weapon("Longsword",              15,  {1, 8},  WeaponType::Martial, WeaponAttribute::Slashing,    WeaponStyle::Melee,  1.4, vector<WeaponProperty>({
+            WeaponProperty::Versatile,
+        })),
+    Weapon("Mace",                   5,   {1, 6},  WeaponType::Simple,  WeaponAttribute::Bludgeoning, WeaponStyle::Melee,  1.8, vector<WeaponProperty>( {     } )),
+    Weapon("Maul",                   10,  {2, 6},  WeaponType::Martial, WeaponAttribute::Bludgeoning, WeaponStyle::Melee,  4.5, vector<WeaponProperty>({
+            WeaponProperty::Heavy,
+            WeaponProperty::TwoHanded,
+        })),
+    Weapon("Morningstar",            15,  {2, 6},  WeaponType::Martial, WeaponAttribute::Piercing,    WeaponStyle::Melee,  1.8, vector<WeaponProperty>( {     } )),
+    Weapon("Musket",                 500, {1, 12}, WeaponType::Firearm, WeaponAttribute::Piercing,    WeaponStyle::Ranged, 4.5, vector<WeaponProperty>({
+            WeaponProperty::Ammunition,
+            WeaponProperty::Range,
+            WeaponProperty::Loading,
+            WeaponProperty::TwoHanded,
+        })),
+    Weapon("Net",                    1,   {0, 0},  WeaponType::Martial, WeaponAttribute::Bludgeoning, WeaponStyle::Ranged, 1.4, vector<WeaponProperty>({
+            WeaponProperty::Special,
+            WeaponProperty::Thrown,
+            WeaponProperty::Range,
+        })),
+    Weapon("Pike",                   5,   {1, 10}, WeaponType::Martial, WeaponAttribute::Piercing,    WeaponStyle::Melee,  8.2, vector<WeaponProperty>({
+            WeaponProperty::Heavy,
+            WeaponProperty::Reach,
+            WeaponProperty::TwoHanded,
+        })),
+    Weapon("Pistol",                 250, {1, 10}, WeaponType::Firearm, WeaponAttribute::Piercing,    WeaponStyle::Ranged, 1.4, vector<WeaponProperty>({
+            WeaponProperty::Ammunition,
+            WeaponProperty::Range,
+            WeaponProperty::Loading,
+        })),
+    Weapon("Pistol (Automatic)",     -1,  {2, 6},  WeaponType::Firearm, WeaponAttribute::Piercing,    WeaponStyle::Ranged, 1.4, vector<WeaponProperty>({
+            WeaponProperty::Ammunition,
+            WeaponProperty::Range,
+            WeaponProperty::Reload,
+        })),
+    Weapon("Quarterstaff",           .2,  {1, 6},  WeaponType::Simple,  WeaponAttribute::Bludgeoning, WeaponStyle::Melee,  1.8, vector<WeaponProperty>({
+            WeaponProperty::Versatile,
+        })),
+    Weapon("Rapier",                 25,  {1, 8},  WeaponType::Martial, WeaponAttribute::Piercing,    WeaponStyle::Melee,  .9,  vector<WeaponProperty>({
+            WeaponProperty::Finesse,
+        })),
+    Weapon("Revolver",               -1,  {2, 8},  WeaponType::Firearm, WeaponAttribute::Piercing,    WeaponStyle::Ranged, 1.4, vector<WeaponProperty>({
+            WeaponProperty::Ammunition,
+            WeaponProperty::Range,
+            WeaponProperty::Reload,
+        })),
+    Weapon("Revolver (Automatic)",   -1,  {2, 8},  WeaponType::Firearm, WeaponAttribute::Piercing,    WeaponStyle::Ranged, 3.6, vector<WeaponProperty>({
+            WeaponProperty::Ammunition,
+            WeaponProperty::Range,
+            WeaponProperty::Reload,
+            WeaponProperty::TwoHanded,
+            WeaponProperty::BurstFire,
+        })),
+    Weapon("Revolver (Hunting)",     -1,  {2, 10}, WeaponType::Firearm, WeaponAttribute::Piercing,    WeaponStyle::Ranged, 3.6, vector<WeaponProperty>({
+            WeaponProperty::Ammunition,
+            WeaponProperty::Range,
+            WeaponProperty::Reload,
+            WeaponProperty::TwoHanded,
+        })),
+    Weapon("Scimitar",               25,  {1, 6},  WeaponType::Martial, WeaponAttribute::Slashing,    WeaponStyle::Melee,  1.4, vector<WeaponProperty>({
+            WeaponProperty::Finesse,
+            WeaponProperty::Light,
+        })),
+    Weapon("Shortbow",               25,  {1, 6},  WeaponType::Simple,  WeaponAttribute::Piercing,    WeaponStyle::Ranged, .9,  vector<WeaponProperty>({
+            WeaponProperty::Ammunition,
+            WeaponProperty::Range,
+            WeaponProperty::TwoHanded,
+        })),
+    Weapon("Shortsword",             10,  {1, 6},  WeaponType::Martial, WeaponAttribute::Piercing,    WeaponStyle::Melee,  .9,  vector<WeaponProperty>({
+            WeaponProperty::Finesse,
+            WeaponProperty::Light,
+        })),
+    Weapon("Shotgun",                -1,  {2, 8},  WeaponType::Firearm, WeaponAttribute::Piercing,    WeaponStyle::Ranged, 3.2, vector<WeaponProperty>({
+            WeaponProperty::Ammunition,
+            WeaponProperty::Range,
+            WeaponProperty::Reload,
+            WeaponProperty::TwoHanded,
+        })),
+    Weapon("Sickle",                 1,   {1, 4},  WeaponType::Simple,  WeaponAttribute::Slashing,    WeaponStyle::Melee,  .9,  vector<WeaponProperty>({
+            WeaponProperty::Light,
+        })),
+    Weapon("Sling",                  .1,  {1, 4},  WeaponType::Simple,  WeaponAttribute::Bludgeoning, WeaponStyle::Ranged, 0,   vector<WeaponProperty>({
+            WeaponProperty::Ammunition,
+            WeaponProperty::Range,
+        })),
+    Weapon("Spear",                  1,   {1, 6},  WeaponType::Simple,  WeaponAttribute::Piercing,    WeaponStyle::Melee,  1.4, vector<WeaponProperty>({
+            WeaponProperty::Ammunition,
+            WeaponProperty::Range,
+            WeaponProperty::Versatile,
+        })),
+    Weapon("Trident",                5,   {1, 6},  WeaponType::Martial, WeaponAttribute::Piercing,    WeaponStyle::Melee,  1.8, vector<WeaponProperty>({
+            WeaponProperty::Thrown,
+            WeaponProperty::Range,
+            WeaponProperty::Versatile,
+        })),
+    Weapon("War Pick",               5,   {1, 8},  WeaponType::Martial, WeaponAttribute::Piercing,    WeaponStyle::Melee,  .9,  vector<WeaponProperty>( {     } )),
+    Weapon("Warhammer",              15,  {1, 8},  WeaponType::Martial, WeaponAttribute::Bludgeoning, WeaponStyle::Melee,  .9,  vector<WeaponProperty>({
+            WeaponProperty::Versatile,
+        })),
+    Weapon("Whip",                   2,   {1, 4},  WeaponType::Martial, WeaponAttribute::Slashing,    WeaponStyle::Melee,  1.4, vector<WeaponProperty>({
+            WeaponProperty::Finesse,
+            WeaponProperty::Reach,
+        })),
+    Weapon("Yklwa",                  1,   {1, 8},  WeaponType::Simple,  WeaponAttribute::Piercing,    WeaponStyle::Melee,  .9,  vector<WeaponProperty>({
+            WeaponProperty::Thrown,
+            WeaponProperty::Range,
+        }) ),
+};
+
+static Weapon findWeapon(string name) {
+    for (Weapon weapon : Weapons) {
+        if (weapon.name == name) { return weapon; };
+    };
+    return Weapon("", 0, { 0, 0 }, WeaponType::Simple, WeaponAttribute::Slashing, WeaponStyle::Melee, 0, vector<WeaponProperty>({ }));
+};
+
+static bool addWeapon(string name, vector<Weapon>& _Weapons, int amount = 1) {
+    if (findWeapon(name).name == "") { display("Couldn't give you " + name + "... Report bug!"); return false; };
+    for (int i = 0; i < amount; i++) { _Weapons.push_back(findWeapon(name)); };
+    display("Successfully gave you " + name + " x" + to_string(amount) + "!");
+    return true;
+};
+
+static bool weaponHasProperty(Weapon weapon, WeaponProperty prop) {
+    for (WeaponProperty elem : weapon.properties) {
+        if (elem == prop) { return true; }
+    };
+    return false;
+};
+
+static vector<Weapon> shuffleWeapons(const vector<Weapon>& original) {
+    vector<Weapon> shuffled = original;
+    random_device rd;
+    mt19937 g(rd());
+    shuffle(shuffled.begin(), shuffled.end(), g);
+    return shuffled;
+}
+
+
+class Armor {
+public:
+    string name;
+    double value;
+    int bonus;
+    bool dexModifier;
+    int dexLimit;
+    int strength;
+    Bonus stealth;
+    double weight;
+
+    Armor(string _name, double _value, int _bonus, bool _dexModifier, int _dexLimit, int _strength, Bonus _stealth, double _weight) :
+        name(_name),
+        value(_value),
+        bonus(_bonus),
+        dexModifier(_dexModifier),
+        dexLimit(_dexLimit),
+        strength(_strength),
+        stealth(_stealth),
+        weight(_weight)
+    {}
+};
+
+vector<Armor> Armors = {
+    Armor("Breastplate Armor",       400,  14, true,  2,  0,  Bonus::Neutral,      9),
+    Armor("Chain Mail Armor",        75,   16, false, -1, 13, Bonus::Neutral,      25),
+    Armor("Chain Shirt Armor",       50,   13, true,  2,  0,  Bonus::Neutral,      9),
+    Armor("Half Plate Armor",        750,  15, true,  2,  0,  Bonus::Disadvantage, 18),
+    Armor("Hide Armor",              10,   12, true,  2,  0,  Bonus::Neutral,      5.4),
+    Armor("Leather Armor",           10,   11, true,  -1, 0,  Bonus::Neutral,      4.5),
+    Armor("Padded Armor",            5,    11, true,  -1, 0,  Bonus::Disadvantage, 3.6),
+    Armor("Plate Armor",             1500, 18, false, -1, 15, Bonus::Disadvantage, 29.5),
+    Armor("Pride Silk Outfit",       500,  11, true,  -1, 0,  Bonus::Neutral,      1.8),
+    Armor("Ring Mail Armor",         30,   14, false, -1, 0,  Bonus::Disadvantage, 18),
+    Armor("Scale Mail Armor",        50,   14, true,  2,  0,  Bonus::Disadvantage, 20.4),
+    Armor("Spiked Armor Armor",      75,   14, true,  2,  0,  Bonus::Disadvantage, 20.4),
+    Armor("Splint Armor",            200,  17, false, -1, 15, Bonus::Disadvantage, 27.2),
+    Armor("Studded Leather Armor",   45,   12, true,  -1, 15, Bonus::Neutral,      5.9)
+};
+
+class ArmorClass {
+public:
+    Armor armor;
+    bool shield;
+
+    ArmorClass(Armor _armor, bool _shield) :
+        armor(_armor),
+        shield(_shield)
+    {}
+};
+
+
+
+class Item {
+public:
+    string name;
+    double value;
+    double weight;
+
+    Item(string _name, double _value, double _weight) :
+        name(_name),
+        value(_value),
+        weight(_weight)
+    {}
+};
+
+class Equipment {
+public:
+    ArmorClass armor;
+    vector<Weapon> weapons;
+    vector<Item> inventory;
+
+    Equipment(ArmorClass _armor, vector<Weapon> _weapons, vector<Item> _inventory) :
+        armor(_armor),
+        weapons(_weapons),
+        inventory(_inventory)
+    {}
+};
+
+class Player {
+public:
+    string name;
+
+    string class_;
+
+    string species;
+
+    int strength;
+    int dexterity;
+    int constitution;
+    int intelligence;
+    int wisdom;
+    int charisma;
+
+    int strengthModifier;
+    int dexterityModifier;
+    int constitutionModifier;
+    int intelligenceModifier;
+    int wisdomModifier;
+    int charismaModifier;
+
+    string background;
+
+    Equipment equipment;
+
+    Player(string _name, string _class, string _species, int _str, int _dex, int _con, int _intl, int _wis, int _cha, string _background, Equipment _Equipment) :
+        name(_name), class_(_class), species(_species),
+        strength(_str), dexterity(_dex), constitution(_con), intelligence(_intl), wisdom(_wis), charisma(_cha),
+        background(_background), equipment(_Equipment)
+    {}
+};
+
+vector<Item> Items = {
+    Item("Explorer's Pack", 10, 26)
+};
+
+static Armor findArmor(string name) {
+    for (Armor armor : Armors) {
+        if (armor.name == name) { return armor; };
+    };
+    return Armor("", 0, 0, false, 0, 0, Bonus::Neutral, 0);
+};
+
+static Item findItem(string name) {
+    for (Item item : Items) {
+        if (item.name == name) { return item; };
+    };
+    return Item("", .0, .0);
+};
+
+static bool addArmor(string name, ArmorClass& _ArmorClass) {
+    if (findArmor(name).name == "") { display("Couldn't give you " + name + "... Report bug!"); return false; };
+    _ArmorClass.armor = findArmor(name);
+    display("Successfully gave you " + name + "!");
+    return true;
+};
+
+static bool addItem(string name, vector<Item>& _Inventory, int amount = 1) {
+    if (findItem(name).name == "") { display("Couldn't give you " + name + "... Report bug!"); return false; };
+    for (int i = 0; i < amount; i++) { _Inventory.push_back(findItem(name)); };
+    display("Successfully gave you " + name + " x" + to_string(amount) + "!");
+    return true;
+};
+
+vector<string> Classes = {
+    "Barbarian",
+    "Bard",
+    "Cleric",
+    "Druid",
+    "Fighter",
+    "Monk",
+    "Paladin",
+    "Rangedr",
+    "Rogue",
+    "Sorcerer",
+    "Warlock",
+    "Wizard"
+};
+
+vector<string> AllSpecies = {
+    "Dragonbord",
+    "Dwarf",
+    "Elf",
+    "Fairy",
+    "Gnome",
+    "Goblin",
+    "Halfing",
+    "Human",
+    "Tiefling"
+};
+
+
+
+
+int main() {
+    display(to_string(Weapons.size()) + " weapons");
+    display(to_string(Armors.size()) + " armors");
+    display("Hey. I am your Game Master. Let's define your character:\n");
+    /*
     string _Name = input("What is your name?");
 
     display(_Name + "... Nice name.");
@@ -69,8 +720,148 @@ int main() {
 
     string _Background = input("What is your background?");
 
-    display("Right, right! So, for your starting equipment...");
+    display("Right, right! So, for your starting equipment...\nBecause you are a " + _Class + ", we will first choose:");
+    */
 
+    string _Class = "Bard";
 
+    ArmorClass _ArmorClass = ArmorClass(Armor("", 0, 0, false, 0, 0, Bonus::Neutral, 0), false);
+    vector<Weapon> _Weapons;
+    vector<Item> _Inventory;
+    Equipment _Equipment = Equipment(_ArmorClass, _Weapons, _Inventory);
+
+    if (_Class == "") {}
+
+    else if (_Class == "Barbarian") {
+        vector<string> eq_0 = { "Greataxe", "Other Martial Weapon" };
+        int eq_0_c = choice(eq_0);
+        if (eq_0_c == indexOf(eq_0, "Greataxe")) {
+            addWeapon("Greataxe", _Weapons);
+        }
+        else if (eq_0_c == indexOf(eq_0, "Other Martial Weapon")) {
+            display("Which one do you want?");
+            vector<string> eq_0_1;
+
+            for (Weapon weapon : shuffleWeapons(Weapons)) {
+                if (weapon.type == WeaponType::Martial && eq_0_1.size() < 9 && weapon.name != "Greataxe") eq_0_1.push_back(weapon.name);
+            };
+
+            int eq_0_1_c = choice(eq_0_1);
+            addWeapon(eq_0_1[eq_0_1_c], _Weapons);
+        };
+
+        vector<string> eq_1 = { "Two Handaxes", "Other Simple Weapon" };
+        int eq_1_c = choice(eq_1);
+        if (eq_1_c == indexOf(eq_1, "Two Handaxes")) {
+            addWeapon("Handaxe", _Weapons, 2);
+        }
+        else if (eq_1_c == indexOf(eq_1, "Other Simple Weapon")){
+            display("Which one do you want?");
+            vector<string> eq_1_1;
+
+            for (Weapon weapon : shuffleWeapons(Weapons)) {
+                if (weapon.type == WeaponType::Simple && eq_1_1.size() < 9) eq_1_1.push_back(weapon.name);
+            };
+
+            int eq_1_1_c = choice(eq_1_1);
+            addWeapon(eq_1_1[eq_1_1_c], _Weapons);
+        };
+
+        addWeapon("Javelin", _Weapons, 4);
+        addItem("Explorer's Pack", _Inventory);
+    }
+
+    else if (_Class == "Bard") {
+        vector<string> eq_0 = { "Rapier", "Longsword", "Other Simple Weapon"};
+        int eq_0_c = choice(eq_0);
+        if (eq_0_c == indexOf(eq_0, "Other Simple Weapon")) {
+            display("Which one do you want?");
+            vector<string> eq_0_1;
+
+            for (Weapon weapon : Weapons) {
+                if (weapon.type == WeaponType::Simple && eq_0_1.size() < 9) eq_0_1.push_back(weapon.name);
+            };
+
+            int eq_0_1_c = choice(eq_0_1);
+
+            addWeapon(eq_0_1[eq_0_1_c], _Weapons);
+        }
+        else if (eq_0_c == indexOf(eq_0, "Rapier")) {
+            addWeapon("Rapier", _Weapons);
+        }
+        else if (eq_0_c == indexOf(eq_0, "Longsword")) {
+            addWeapon("Longsword", _Weapons);
+        };
+
+        vector<string> eq_1 = { "Diplomat's Pack", "Entertainer's Pack" };
+        int eq_1_c = choice(eq_1);
+        if (eq_1_c == indexOf(eq_1, "Diplomat's Pack")) {
+            addItem("Diplomat's Pack", _Inventory);
+        }
+        else if (eq_1_c == indexOf(eq_1, "Entertainer's Pack")) {
+            addItem("Entertainer's Pack", _Inventory);
+        };
+
+        addArmor("Leather Armor", _ArmorClass);
+        addWeapon("Dagger", _Weapons);
+    }
+
+    else if (_Class == "Cleric") {
+        vector<string> eq_0 = { "Mace", "Warhammer" };
+        int eq_0_c = choice(eq_0);
+        if (eq_0_c == indexOf(eq_0, "Mace")) {
+            addWeapon("Mace", _Weapons);
+        }
+        else if (eq_0_c == indexOf(eq_0, "Warhammer")) {
+            addWeapon("Warhammer", _Weapons);
+        };
+
+        vector<string> eq_1 = { "Scale Mail", "Leather Armor", "Chain Mail"};
+        int eq_1_c = choice(eq_1);
+        if (eq_1_c == indexOf(eq_1, "Scale Mail")) {
+            addArmor("Scale Mail", _ArmorClass);
+        }
+        else if (eq_1_c == indexOf(eq_1, "Leather Armor")) {
+            addArmor("Leather Armor", _ArmorClass);
+        }
+        else if (eq_1_c == indexOf(eq_1, "Chain Mail")) {
+            addArmor("Chain Mail", _ArmorClass);
+        };
+
+        vector<string> eq_2 = { "Light Crossbow + 20 bolts", "Other Simple Weapon" };
+        int eq_2_c = choice(eq_2);
+        if (eq_2_c == indexOf(eq_2, "Light Crossbow + 20 bolts")) {
+            addWeapon("Light Crossbow", _Weapons);
+            addItem("Bolt", _Inventory, 20);
+        }
+        else if (eq_2_c == indexOf(eq_2, "Other Simple Weapon")) {
+            display("Which one do you want?");
+            vector<string> eq_2_1;
+
+            for (Weapon weapon : Weapons) {
+                if (weapon.type == WeaponType::Simple && eq_2_1.size() < 9) eq_2_1.push_back(weapon.name);
+            };
+
+            int eq_2_1_c = choice(eq_2_1);
+
+            addWeapon(eq_2_1[eq_2_1_c], _Weapons);
+        };
+
+        vector<string> eq_3 = { "Priest's Pack", "Explorer's Pack" };
+        int eq_3_c = choice(eq_3);
+        if (eq_3_c == indexOf(eq_3, "Priest's Pack")) {
+            addItem("Priest's Pack", _Inventory);
+        }
+        else if (eq_3_c == indexOf(eq_3, "Explorer's Pack")) {
+            addItem("Explorer's Pack", _Inventory);
+        };
+
+        _ArmorClass.shield = true;
+        addItem("Holy Symbol", _Inventory);
+    }
+
+    display("Yay coward");
+
+    // const Player Character = Player(_Name, _Class, _Species, _Strength, _Dexterity, _Constitution, _Intelligence, _Wisdom, _Charisma, _Background, _Equipment);
 };
 
