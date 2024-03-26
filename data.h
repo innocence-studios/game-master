@@ -1,7 +1,8 @@
 #pragma once
-
+/*
 #include <iostream>
 #include <vector>
+
 using namespace std;
 
 extern vector<string> Classes;
@@ -15,8 +16,9 @@ extern int choice(vector<string> choices);
 extern bool vectorHasValue(vector<string> vec, string val);
 extern vector<int> highestOfVector(vector<int> vec, int amount);
 extern int vectorTotal(vector<int> vec);
-extern string toLowercase(const string& str);
+extern string toLowercase(string str);
 extern string firstUpper(string str);
-extern int rollDice(int max = 6);
-extern int rollDiceAndCalculateTotal(const string& attribute, int maxDice = 6);
+extern int rollDice(int max);
+extern int rollDiceAndCalculateTotal(string attribute, int maxDice = 6);
 
+*/
