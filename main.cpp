@@ -56,7 +56,7 @@ static void display(string str, bool hasEndl = true) {
 static int indexOf(vector<string> vec, string val) {
     auto it = find(vec.begin(), vec.end(), val);
     if (it != vec.end()) {
-        return distance(vec.begin(), it);
+        return static_cast<int>(distance(vec.begin(), it));
     }
     else {
         return -1;
@@ -462,7 +462,7 @@ vector<Weapon> Weapons = {
 
 static Weapon findWeapon(string name) {
     for (Weapon weapon : Weapons) {
-        if (weapon.name == name) { return weapon; };
+        if (toLowercase(weapon.name) == toLowercase(name)) { return weapon; };
     };
     return Weapon("", 0, { 0, 0 }, WeaponType::Simple, WeaponAttribute::Slashing, WeaponStyle::Melee, 0, vector<WeaponProperty>({ }));
 };
@@ -595,9 +595,10 @@ public:
 
     Equipment equipment;
 
-    Player(string _name, string _class, string _species, int _str, int _dex, int _con, int _intl, int _wis, int _cha, string _background, Equipment _Equipment) :
+    Player(string _name, string _class, string _species, int _str, int _dex, int _con, int _intl, int _wis, int _cha, int _strM, int _dexM, int _conM, int _intlM, int _wisM, int _chaM, string _background, Equipment _Equipment) :
         name(_name), class_(_class), species(_species),
         strength(_str), dexterity(_dex), constitution(_con), intelligence(_intl), wisdom(_wis), charisma(_cha),
+        strengthModifier(_strM), dexterityModifier(_dexM), constitutionModifier(_conM), intelligenceModifier(_intlM), wisdomModifier(_wisM), charismaModifier(_cha),
         background(_background), equipment(_Equipment)
     {}
 };
@@ -606,18 +607,18 @@ vector<Item> Items = {
     Item("Explorer's Pack", 10, 26)
 };
 
-static Armor findArmor(string name) {
-    for (Armor armor : Armors) {
-        if (armor.name == name) { return armor; };
-    };
-    return Armor("", 0, 0, false, 0, 0, Bonus::Neutral, 0);
-};
-
 static Item findItem(string name) {
     for (Item item : Items) {
-        if (item.name == name) { return item; };
+        if (toLowercase(item.name) == toLowercase(name)) { return item; };
     };
     return Item("", .0, .0);
+};
+
+static Armor findArmor(string name) {
+    for (Armor armor : Armors) {
+        if (toLowercase(armor.name) == toLowercase(name)) { return armor; };
+    };
+    return Armor("", 0, 0, false, 0, 0, Bonus::Neutral, 0);
 };
 
 static bool addArmor(string name, ArmorClass& _ArmorClass) {
@@ -634,19 +635,50 @@ static bool addItem(string name, vector<Item>& _Inventory, int amount = 1) {
     return true;
 };
 
-vector<string> Classes = {
-    "Barbarian",
-    "Bard",
-    "Cleric",
-    "Druid",
-    "Fighter",
-    "Monk",
-    "Paladin",
-    "Rangedr",
-    "Rogue",
-    "Sorcerer",
-    "Warlock",
-    "Wizard"
+enum Ability {
+    Strength,
+    Dexterity,
+    Constitution,
+    Intelligence,
+    Wisdom,
+    Charisma
+};
+
+class Class {
+public:
+    string name;
+    Dice hit;
+    vector<Ability> ability;
+    vector<Ability> saves;
+
+    Class(string _name, Dice _hit, vector<Ability> _ability, vector<Ability> _saves) :
+        name(_name),
+        hit(_hit),
+        ability(_ability),
+        saves(_saves)
+    {}
+};
+
+vector<Class> Classes = {
+    Class("Barbarian", { 1, 12 }, { Ability::Strength }, { Ability::Strength, Ability::Constitution }),
+    Class("Bard", { 1, 8 }, { Ability::Charisma }, { Ability::Dexterity, Ability::Charisma }),
+    Class("Cleric", { 1, 8 }, { Ability::Wisdom }, { Ability::Wisdom, Ability::Charisma }),
+    Class("Druid", { 1, 8 }, { Ability::Wisdom }, { Ability::Intelligence, Ability::Wisdom }),
+    Class("Fighter", { 1, 10 }, { Ability::Strength }, { Ability::Strength, Ability::Constitution }),
+    Class("Monk", { 1, 8 }, { Ability::Dexterity, Ability::Wisdom }, { Ability::Strength, Ability::Dexterity }),
+    Class("Paladin", { 1, 10 }, { Ability::Strength, Ability::Charisma }, { Ability::Wisdom, Ability::Charisma }),
+    Class("Ranger", { 1, 10 }, { Ability::Dexterity, Ability::Wisdom }, { Ability::Strength, Ability::Dexterity }),
+    Class("Rogue", { 1, 8 }, { Ability::Dexterity }, { Ability::Dexterity, Ability::Intelligence }),
+    Class("Sorcerer", { 1, 6 }, { Ability::Charisma }, { Ability::Constitution, Ability::Charisma }),
+    Class("Warlock", { 1, 8 }, { Ability::Charisma }, { Ability::Wisdom, Ability::Charisma }),
+    Class("Wizard", { 1, 6 }, { Ability::Intelligence }, { Ability::Intelligence, Ability::Wisdom }),
+};
+
+static Class findClass(string name) {
+    for (Class _class : Classes) {
+        if (toLowercase(_class.name) == toLowercase(name)) { return _class; };
+    };
+    return Class("", { 0, 0 }, { Ability::Strength }, { Ability::Strength, Ability::Strength });
 };
 
 vector<string> AllSpecies = {
@@ -720,19 +752,19 @@ int main() {
 
     string _Background = input("What is your background?");
 
-    display("Right, right! So, for your starting equipment...\nBecause you are a " + _Class + ", we will first choose:");
+    display("Right, right! So, for your starting equipment...\nChoose which one you like the most:");
     */
 
-    string _Class = "Bard";
+    Class _Class = findClass("Bard");
 
     ArmorClass _ArmorClass = ArmorClass(Armor("", 0, 0, false, 0, 0, Bonus::Neutral, 0), false);
     vector<Weapon> _Weapons;
     vector<Item> _Inventory;
     Equipment _Equipment = Equipment(_ArmorClass, _Weapons, _Inventory);
 
-    if (_Class == "") {}
+    if (_Class.name == "") {}
 
-    else if (_Class == "Barbarian") {
+    else if (_Class.name == "Barbarian") {
         vector<string> eq_0 = { "Greataxe", "Other Martial Weapon" };
         int eq_0_c = choice(eq_0);
         if (eq_0_c == indexOf(eq_0, "Greataxe")) {
@@ -760,7 +792,7 @@ int main() {
             vector<string> eq_1_1;
 
             for (Weapon weapon : shuffleWeapons(Weapons)) {
-                if (weapon.type == WeaponType::Simple && eq_1_1.size() < 9) eq_1_1.push_back(weapon.name);
+                if (weapon.type == WeaponType::Simple && eq_1_1.size() < 9 && weapon.name != "Greataxe") eq_1_1.push_back(weapon.name);
             };
 
             int eq_1_1_c = choice(eq_1_1);
@@ -771,7 +803,7 @@ int main() {
         addItem("Explorer's Pack", _Inventory);
     }
 
-    else if (_Class == "Bard") {
+    else if (_Class.name == "Bard") {
         vector<string> eq_0 = { "Rapier", "Longsword", "Other Simple Weapon"};
         int eq_0_c = choice(eq_0);
         if (eq_0_c == indexOf(eq_0, "Other Simple Weapon")) {
@@ -806,7 +838,7 @@ int main() {
         addWeapon("Dagger", _Weapons);
     }
 
-    else if (_Class == "Cleric") {
+    else if (_Class.name == "Cleric") {
         vector<string> eq_0 = { "Mace", "Warhammer" };
         int eq_0_c = choice(eq_0);
         if (eq_0_c == indexOf(eq_0, "Mace")) {
@@ -860,8 +892,396 @@ int main() {
         addItem("Holy Symbol", _Inventory);
     }
 
+    else if (_Class.name == "Druid") {
+        vector<string> eq_0 = { "Shield", "Other Simple Weapon" };
+        int eq_0_c = choice(eq_0);
+        if (eq_0_c == indexOf(eq_0, "Shield")) {
+            _ArmorClass.shield = true;
+        }
+        else if (eq_0_c == indexOf(eq_0, "Other Simple Weapon")) {
+            display("Which one do you want?");
+            vector<string> eq_0_1;
+
+            for (Weapon weapon : shuffleWeapons(Weapons)) {
+                if (weapon.type == WeaponType::Simple && eq_0_1.size() < 9) eq_0_1.push_back(weapon.name);
+            };
+
+            int eq_0_1_c = choice(eq_0_1);
+            addWeapon(eq_0_1[eq_0_1_c], _Weapons);
+        };
+
+        vector<string> eq_1 = { "Scimitar", "Other Simple Melee Weapon" };
+        int eq_1_c = choice(eq_1);
+        if (eq_1_c == indexOf(eq_1, "Scimitar")) {
+            addWeapon("Scimitar", _Weapons);
+        }
+        else if (eq_1_c == indexOf(eq_1, "Other Simple Melee Weapon")) {
+            display("Which one do you want?");
+            vector<string> eq_1_1;
+
+            for (Weapon weapon : shuffleWeapons(Weapons)) {
+                if (weapon.type == WeaponType::Simple && weapon.style == WeaponStyle::Melee && eq_1_1.size() < 9) eq_1_1.push_back(weapon.name);
+            };
+
+            int eq_1_1_c = choice(eq_1_1);
+            addWeapon(eq_1_1[eq_1_1_c], _Weapons);
+        };
+
+        addArmor("Leather Armor", _ArmorClass);
+        addItem("Explorer's Pack", _Inventory);
+        addItem("Druidic Focus", _Inventory);
+    }
+
+    else if (_Class.name == "Fighter") {
+        vector<string> eq_0 = { "Chain Mail Armor", "Leather Armor + Longbow + 20 Arrows" };
+        int eq_0_c = choice(eq_0);
+        if (eq_0_c == indexOf(eq_0, "Chain Mail Armor")) {
+            addArmor("Chain Mail Armor", _ArmorClass);
+        }
+        else if (eq_0_c == indexOf(eq_0, "Leather Armor + Longbow + 20 Arrows")) {
+            addArmor("Leather Armor", _ArmorClass);
+            addWeapon("Longbow", _Weapons);
+            addItem("Arrows", _Inventory, 20);
+        };
+
+        vector<string> eq_1 = { "Martial Weapon + Shield", "2 Martial Weapons" };
+        int eq_1_c = choice(eq_1);
+        if (eq_1_c == indexOf(eq_1, "Martial Weapon + Shield")) {
+            display("Which one do you want?");
+            vector<string> eq_1_1;
+
+            for (Weapon weapon : shuffleWeapons(Weapons)) {
+                if (weapon.type == WeaponType::Martial && eq_1_1.size() < 9) eq_1_1.push_back(weapon.name);
+            };
+
+            int eq_1_1_c = choice(eq_1_1);
+            addWeapon(eq_1_1[eq_1_1_c], _Weapons);
+            _ArmorClass.shield = true;
+        }
+        else if (eq_1_c == indexOf(eq_1, "2 Martial Weapons")) {
+            for (int i = 0; i < 2; i++) {
+                display("Which one do you want?");
+                vector<string> eq_1_2;
+
+                for (Weapon weapon : shuffleWeapons(Weapons)) {
+                    if (weapon.type == WeaponType::Martial && eq_1_2.size() < 9) eq_1_2.push_back(weapon.name);
+                };
+
+                int eq_1_2_c = choice(eq_1_2);
+                addWeapon(eq_1_2[eq_1_2_c], _Weapons);
+            };
+        };
+
+        vector<string> eq_2 = { "Light Crossbow + 20 bolts", "2 Handaxes" };
+        int eq_2_c = choice(eq_2);
+        if (eq_2_c == indexOf(eq_2, "Light Crossbow + 20 bolts")) {
+            addWeapon("Light Crossbow", _Weapons);
+            addItem("Bolt", _Inventory, 20);
+        }
+        else if (eq_2_c == indexOf(eq_2, "2 Handaxes")) {
+            addWeapon("Handaxe", _Weapons, 2);
+        };
+
+        vector<string> eq_3 = { "Dungeoneer's Pack", "Explorer's Pack" };
+        int eq_3_c = choice(eq_3);
+        if (eq_3_c == indexOf(eq_3, "Dungeoneer's Pack")) {
+            addItem("Dungeoneer's Pack", _Inventory);
+        }
+        else if (eq_3_c == indexOf(eq_3, "Explorer's Pack")) {
+            addItem("Explorer's Pack", _Inventory);
+        };
+    }
+
+    else if (_Class.name == "Monk") {
+        vector<string> eq_0 = { "Shortsword", "Other Simple Weapon" };
+        int eq_0_c = choice(eq_0);
+        if (eq_0_c == indexOf(eq_0, "Shortsword")) {
+            addWeapon("Shortsword", _Weapons);
+        }
+        else if (eq_0_c == indexOf(eq_0, "Other Simple Weapon")) {
+            display("Which one do you want?");
+            vector<string> eq_0_1;
+
+            for (Weapon weapon : Weapons) {
+                if (weapon.type == WeaponType::Simple && eq_0_1.size() < 9) eq_0_1.push_back(weapon.name);
+            };
+
+            int eq_0_1_c = choice(eq_0_1);
+
+            addWeapon(eq_0_1[eq_0_1_c], _Weapons);
+        };
+
+        vector<string> eq_1 = { "Dungeoneer's Pack", "Explorer's Pack" };
+        int eq_1_c = choice(eq_1);
+        if (eq_1_c == indexOf(eq_1, "Dungeoneer's Pack")) {
+            addItem("Dungeoneer's Pack", _Inventory);
+        }
+        else if (eq_1_c == indexOf(eq_1, "Explorer's Pack")) {
+            addItem("Explorer's Pack", _Inventory);
+        };
+
+        addWeapon("Dart", _Weapons, 10);
+    }
+
+    else if (_Class.name == "Paladin") {
+        vector<string> eq_0 = { "Martial Weapon + Shield", "2 Martial Weapons" };
+        int eq_0_c = choice(eq_0);
+        if (eq_0_c == indexOf(eq_0, "Martial Weapon + Shield")) {
+            display("Which one do you want?");
+            vector<string> eq_0_1;
+
+            for (Weapon weapon : shuffleWeapons(Weapons)) {
+                if (weapon.type == WeaponType::Martial && eq_0_1.size() < 9) eq_0_1.push_back(weapon.name);
+            };
+
+            int eq_0_1_c = choice(eq_0_1);
+            addWeapon(eq_0_1[eq_0_1_c], _Weapons);
+            _ArmorClass.shield = true;
+        }
+        else if (eq_0_c == indexOf(eq_0, "2 Martial Weapons")) {
+            for (int i = 0; i < 2; i++) {
+                display("Which one do you want?");
+                vector<string> eq_0_2;
+
+                for (Weapon weapon : shuffleWeapons(Weapons)) {
+                    if (weapon.type == WeaponType::Martial && eq_0_2.size() < 9) eq_0_2.push_back(weapon.name);
+                };
+
+                int eq_0_2_c = choice(eq_0_2);
+                addWeapon(eq_0_2[eq_0_2_c], _Weapons);
+            };
+        };
+
+        vector<string> eq_1 = { "5 Javelins", "Other Simple Melee Weapon" };
+        int eq_1_c = choice(eq_1);
+        if (eq_1_c == indexOf(eq_1, "Scimitar")) {
+            addWeapon("Javelin", _Weapons, 5);
+        }
+        else if (eq_1_c == indexOf(eq_1, "Other Simple Melee Weapon")) {
+            display("Which one do you want?");
+            vector<string> eq_1_1;
+
+            for (Weapon weapon : shuffleWeapons(Weapons)) {
+                if (weapon.type == WeaponType::Simple && weapon.style == WeaponStyle::Melee && eq_1_1.size() < 9) eq_1_1.push_back(weapon.name);
+            };
+
+            int eq_1_1_c = choice(eq_1_1);
+            addWeapon(eq_1_1[eq_1_1_c], _Weapons);
+        };
+
+        vector<string> eq_2 = { "Priest's Pack", "Explorer's Pack" };
+        int eq_2_c = choice(eq_2);
+        if (eq_2_c == indexOf(eq_2, "Priest's Pack")) {
+            addItem("Priest's Pack", _Inventory);
+        }
+        else if (eq_2_c == indexOf(eq_2, "Explorer's Pack")) {
+            addItem("Explorer's Pack", _Inventory);
+        };
+
+        addArmor("Chain Mail Armor", _ArmorClass);
+        addItem("Holy Symbol", _Inventory);
+    }
+
+    else if (_Class.name == "Ranger") {
+        vector<string> eq_0 = { "Scale Mail Armor", "Leather Armor" };
+        int eq_0_c = choice(eq_0);
+        if (eq_0_c == indexOf(eq_0, "Chain Mail Armor")) {
+            addArmor("Scale Mail Armor", _ArmorClass);
+        }
+        else if (eq_0_c == indexOf(eq_0, "Leather Armor + Longbow + 20 Arrows")) {
+            addArmor("Leather Armor", _ArmorClass);
+        };
+
+        vector<string> eq_1 = { "2 Shortswords", "Other Simple Melee Weapon" };
+        int eq_1_c = choice(eq_1);
+        if (eq_1_c == indexOf(eq_1, "2 Shortswords")) {
+            addWeapon("Shortsword", _Weapons, 2);
+        }
+        else if (eq_1_c == indexOf(eq_1, "Other Simple Melee Weapon")) {
+            display("Which one do you want?");
+            vector<string> eq_1_1;
+
+            for (Weapon weapon : shuffleWeapons(Weapons)) {
+                if (weapon.type == WeaponType::Simple && weapon.style == WeaponStyle::Melee && eq_1_1.size() < 9) eq_1_1.push_back(weapon.name);
+            };
+
+            int eq_1_1_c = choice(eq_1_1);
+            addWeapon(eq_1_1[eq_1_1_c], _Weapons);
+        };
+
+        vector<string> eq_2 = { "Dungeoneer's Pack", "Explorer's Pack" };
+        int eq_2_c = choice(eq_2);
+        if (eq_2_c == indexOf(eq_2, "Dungeoneer's Pack")) {
+            addItem("Dungeoneer's Pack", _Inventory);
+        }
+        else if (eq_2_c == indexOf(eq_2, "Explorer's Pack")) {
+            addItem("Explorer's Pack", _Inventory);
+        };
+        
+        addWeapon("Longbow", _Weapons);
+        addItem("Arrow", _Inventory, 20);
+    }
+
+    else if (_Class.name == "Rogue") {
+        vector<string> eq_0 = { "Rapier", "Shortsword" };
+        int eq_0_c = choice(eq_0);
+        if (eq_0_c == indexOf(eq_0, "Rapier")) {
+            addWeapon("Rapier", _Weapons);
+        }
+        else if (eq_0_c == indexOf(eq_0, "Shortsword")) {
+            addWeapon("Shortsword", _Weapons);
+        }
+
+        vector<string> eq_1 = { "Shortbow + 20 Arrows", "Shortsword" };
+        int eq_1_c = choice(eq_1);
+        if (eq_1_c == indexOf(eq_1, "Shortbow + 20 Arrows")) {
+            addWeapon("Shortbow", _Weapons);
+            addItem("Arrow", _Inventory, 20);
+        }
+        else if (eq_1_c == indexOf(eq_1, "Shortsword")) {
+            addWeapon("Shortsword", _Weapons);
+        };
+
+        vector<string> eq_2 = { "Burglar's Pack", "Dungeoneer's Pack", "Explorer's Pack" };
+        int eq_2_c = choice(eq_2);
+        if (eq_2_c == indexOf(eq_2, "Burglar's Pack")) {
+            addItem("Burglar's Pack", _Inventory);
+        }
+        else if (eq_2_c == indexOf(eq_2, "Dungeoneer's Pack")) {
+            addItem("Dungeoneer's Pack", _Inventory);
+        }
+        else if (eq_2_c == indexOf(eq_2, "Explorer's Pack")) {
+            addItem("Explorer's Pack", _Inventory);
+        };
+
+        addArmor("Leather Armor", _ArmorClass);
+        addWeapon("Dagger", _Weapons, 2);
+        addItem("Thieve's Tools", _Inventory);
+    }
+
+    else if (_Class.name == "Sorcerer") {
+        vector<string> eq_0 = { "Light Crossbow + 20 Bolts", "Other Simple Weapon" };
+        int eq_0_c = choice(eq_0);
+        if (eq_0_c == indexOf(eq_0, "Light Crossbow + 20 Bolts")) {
+            addWeapon("Light Crossbow", _Weapons);
+            addItem("Bolt", _Inventory, 20);
+        }
+        else if (eq_0_c == indexOf(eq_0, "Other Simple Weapon")) {
+            display("Which one do you want?");
+            vector<string> eq_0_1;
+
+            for (Weapon weapon : shuffleWeapons(Weapons)) {
+                if (weapon.type == WeaponType::Simple && eq_0_1.size() < 9) eq_0_1.push_back(weapon.name);
+            };
+
+            int eq_0_1_c = choice(eq_0_1);
+            addWeapon(eq_0_1[eq_0_1_c], _Weapons);
+        };
+
+        vector<string> eq_1 = { "Component Pouch", "Arcane Focus" };
+        int eq_1_c = choice(eq_1);
+        if (eq_1_c == indexOf(eq_1, "Component Pouch")) {
+            addItem("Component Pouch", _Inventory);
+        }
+        else if (eq_1_c == indexOf(eq_1, "Arcane Focus")) {
+            addItem("Arcane Focus", _Inventory);
+        };
+
+        vector<string> eq_2 = { "Dungeoneer's Pack", "Explorer's Pack" };
+        int eq_2_c = choice(eq_2);
+        if (eq_2_c == indexOf(eq_2, "Dungeoneer's Pack")) {
+            addItem("Dungeoneer's Pack", _Inventory);
+        }
+        else if (eq_2_c == indexOf(eq_2, "Explorer's Pack")) {
+            addItem("Explorer's Pack", _Inventory);
+        };
+
+        addWeapon("Dagger", _Weapons, 2);
+    }
+
+    else if (_Class.name == "Warlock") {
+        vector<string> eq_0 = { "Light Crossbow + 20 Bolts", "Other Simple Weapon" };
+        int eq_0_c = choice(eq_0);
+        if (eq_0_c == indexOf(eq_0, "Light Crossbow + 20 Bolts")) {
+            addWeapon("Light Crossbow", _Weapons);
+            addItem("Bolt", _Inventory, 20);
+        }
+        else if (eq_0_c == indexOf(eq_0, "Other Simple Weapon")) {
+            display("Which one do you want?");
+            vector<string> eq_0_1;
+
+            for (Weapon weapon : shuffleWeapons(Weapons)) {
+                if (weapon.type == WeaponType::Simple && eq_0_1.size() < 9) eq_0_1.push_back(weapon.name);
+            };
+
+            int eq_0_1_c = choice(eq_0_1);
+            addWeapon(eq_0_1[eq_0_1_c], _Weapons);
+        };
+
+        vector<string> eq_1 = { "Component Pouch", "Arcane Focus" };
+        int eq_1_c = choice(eq_1);
+        if (eq_1_c == indexOf(eq_1, "Component Pouch")) {
+            addItem("Component Pouch", _Inventory);
+        }
+        else if (eq_1_c == indexOf(eq_1, "Arcane Focus")) {
+            addItem("Arcane Focus", _Inventory);
+        };
+
+        vector<string> eq_2 = { "Scholar's Pack", "Dungeoneer's Pack" };
+        int eq_2_c = choice(eq_2);
+        if (eq_2_c == indexOf(eq_2, "Scholar's Pack")) {
+            addItem("Scholar's Pack", _Inventory);
+        }
+        else if (eq_2_c == indexOf(eq_2, "Dungeoneer's Pack")) {
+            addItem("Dungeoneer's Pack", _Inventory);
+        };
+
+        display("Which one do you want?");
+        vector<string> eq_0_1;
+
+        for (Weapon weapon : shuffleWeapons(Weapons)) {
+            if (weapon.type == WeaponType::Simple && eq_0_1.size() < 9) eq_0_1.push_back(weapon.name);
+        };
+
+        int eq_0_1_c = choice(eq_0_1);
+        addWeapon(eq_0_1[eq_0_1_c], _Weapons);
+
+        addArmor("Leather Armor", _ArmorClass);
+        addWeapon("Dagger", _Weapons, 2);
+    }
+
+    else if (_Class.name == "Wizard") {
+        vector<string> eq_0 = { "Quarterstaff", "Dagger" };
+        int eq_0_c = choice(eq_0);
+        if (eq_0_c == indexOf(eq_0, "Quarterstaff")) {
+            addWeapon("Quarterstaff", _Weapons);
+        }
+        else if (eq_0_c == indexOf(eq_0, "Dagger")) {
+            addWeapon("Dagger", _Weapons);
+        }
+
+        vector<string> eq_1 = { "Component Pouch", "Arcane Focus" };
+        int eq_1_c = choice(eq_1);
+        if (eq_1_c == indexOf(eq_1, "Component Pouch")) {
+            addItem("Component Pouch", _Inventory);
+        }
+        else if (eq_1_c == indexOf(eq_1, "Arcane Focus")) {
+            addItem("Arcane Focus", _Inventory);
+        };
+
+        vector<string> eq_2 = { "Scholar's Pack", "Dungeoneer's Pack" };
+        int eq_2_c = choice(eq_2);
+        if (eq_2_c == indexOf(eq_2, "Scholar's Pack")) {
+            addItem("Scholar's Pack", _Inventory);
+        }
+        else if (eq_2_c == indexOf(eq_2, "Dungeoneer's Pack")) {
+            addItem("Dungeoneer's Pack", _Inventory);
+        };
+
+        addItem("Spellbook", _Inventory);
+    };
+
     display("Yay coward");
 
     // const Player Character = Player(_Name, _Class, _Species, _Strength, _Dexterity, _Constitution, _Intelligence, _Wisdom, _Charisma, _Background, _Equipment);
 };
-
